@@ -13,8 +13,8 @@ const searchUsers = async () => {
   search.value = ''
 }
 
-const selectUserToChat = (userId: string) => {
-  emit('select-user', userId)
+const selectUserToChat = (user: User) => {
+  emit('select-user', user)
   users.value = []
 }
 </script>
@@ -36,7 +36,7 @@ const selectUserToChat = (userId: string) => {
   </div>
 
   <ul class="mb-4">
-    <li v-for="user in users" @click="selectUserToChat(user.userId)">{{ user.name }}</li>
+    <li v-for="user in users" @click="selectUserToChat(user)">{{ user.name }}</li>
   </ul>
 </template>
 

@@ -23,7 +23,6 @@ const { getUser } = useChatStore()
 
 const messages = ref<ArchiveMessage[]>([])
 const conversations = ref<Conversation[]>([])
-const users = ref<User[]>([])
 const owner = ref<User | null>(null)
 const currentConversation = ref<Conversation | null>(null)
 
@@ -38,18 +37,15 @@ const getConversationHistory = async (conversationId: string) => {
   )
 }
 
-const selectUserToChat = async (userId: string) => {
+const selectUserToChat = async (user: User) => {
   const conversation = conversations.value.find(
-    (chat) => chat.participants.length === 1 && chat.participants[0].userId === userId
+    (chat) => chat.participants.length === 1 && chat.participants[0].userId === user.userId
   )
   if (conversation) {
     currentConversation.value = conversation
   }
   if (!conversation) {
-    const user = users.value.find((user) => user.userId === userId)
-    if (user) {
-      currentConversation.value = { conversationId: '', participants: [user] }
-    }
+    currentConversation.value = { conversationId: '', participants: [user] }
   }
   getConversationHistory(conversation?.conversationId ?? '')
 }
@@ -89,18 +85,15 @@ const sendMessage = async (value: string) => {
 }
 
 onMounted(() => {
-  const user = getUser
-
   if (!getUser || !getUser.loggedIn) {
     router.push({ path: '/login' })
     return
   }
 
-  console.log('User', user.data?.data)
-  if (getUser.data) {
+  if (getUser.data && getUser.data.data) {
     owner.value = getUser.data.data as User
   }
-  console.log('owner', owner.value)
+
   getUserConversations(owner.value?.userId ?? '')
 
   socket = io(import.meta.env.VITE_SERVICE_URL, {
@@ -111,9 +104,13 @@ onMounted(() => {
     console.log('Client socket ID is', socket?.id)
   })
   socket.on('message', (message: string) => {
-    console.log('message', message)
     const msgAsObject = JSON.parse(message)
-    if (msgAsObject.conversationId === currentConversation.value?.conversationId) {
+    if (
+      msgAsObject.conversationId === currentConversation.value?.conversationId ||
+      (!currentConversation.value?.conversationId &&
+        currentConversation.value?.participants &&
+        currentConversation.value?.participants.find((p) => p.userId === msgAsObject.from.userId))
+    ) {
       messages.value = [
         ...messages.value,
         {
@@ -126,18 +123,25 @@ onMounted(() => {
           }
         }
       ]
-      return
+      if (!currentConversation.value?.conversationId) {
+        currentConversation.value = {
+          conversationId: msgAsObject.conversationId,
+          participants: [msgAsObject.from],
+          newMessage: false
+        }
+      }
     }
     const conversationIndex = conversations.value.findIndex(
       (chat) => chat.conversationId === msgAsObject.conversationId
     )
     if (conversationIndex === -1) {
+      const newMessage = currentConversation.value?.conversationId !== msgAsObject.conversationId
       conversations.value = [
         ...conversations.value,
         {
           conversationId: msgAsObject.conversationId,
           participants: [msgAsObject.from],
-          newMessage: true
+          newMessage
         }
       ]
     } else {
