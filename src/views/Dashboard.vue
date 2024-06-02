@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
-import { useChatStore } from '@/stores/chat'
+import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import type { Socket } from 'socket.io-client'
 import { io } from 'socket.io-client'
@@ -15,11 +15,12 @@ import MessageInput from '@/components/MessageInput.vue'
 import SearchInput from '@/components/SearchInput.vue'
 import Conversations from '@/components/Conversations.vue'
 import Messages from '@/components/Messages.vue'
+import { verifyToken } from '@/utils/sessionUtils'
 
 let socket: Socket | null = null
 
 const router = useRouter()
-const { getUser } = useChatStore()
+const { getUser, findUserById } = useAuthStore()
 
 const messages = ref<ArchiveMessage[]>([])
 const conversations = ref<Conversation[]>([])
@@ -84,7 +85,12 @@ const sendMessage = async (value: string) => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const tokenPayload = await verifyToken()
+  if (tokenPayload && tokenPayload.userId) {
+    await findUserById(tokenPayload.userId)
+  }
+
   if (!getUser || !getUser.loggedIn) {
     router.push({ path: '/login' })
     return

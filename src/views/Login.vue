@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useChatStore } from '@/stores/chat'
+import { useAuthStore } from '@/stores/auth'
 import { formInputClasses, submitButtonClasses, formClasses } from '../styles/styles'
 import { useRouter } from 'vue-router'
+import { verifyToken } from '@/utils/sessionUtils'
 
 const router = useRouter()
-const { login, getUser } = useChatStore()
+const { login, getUser, findUserById } = useAuthStore()
 const submitted = ref(false)
 const submitError = ref(null)
 const handleSubmit = async (v) => {
@@ -19,7 +20,12 @@ const handleSubmit = async (v) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const tokenPayload = await verifyToken()
+  if (tokenPayload && tokenPayload.userId) {
+    await findUserById(tokenPayload.userId)
+  }
+
   if (getUser.loggedIn) {
     router.push({ path: '/' })
   }

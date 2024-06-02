@@ -1,6 +1,5 @@
-import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { createUserWithEmailAndPassword, signOut, signInWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/main'
 import {
   createUser,
@@ -12,6 +11,7 @@ import {
 } from '@/services/userService'
 import type { UserData } from '@/types/UserData'
 import type { UserAccount } from '@/types/UserAccount'
+import { createToken } from '@/utils/sessionUtils'
 
 // export const useCounterStore = defineStore('chatStore', () => {
 //   const count = ref(0)
@@ -41,7 +41,7 @@ import type { UserAccount } from '@/types/UserAccount'
 //   }
 // })
 
-export const useChatStore = defineStore('chat', {
+export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: {
       loggedIn: false,
@@ -60,12 +60,18 @@ export const useChatStore = defineStore('chat', {
     setUser(data: UserData | null) {
       this.user.data = data
     },
+    async findUserById(userId: string) {
+      const user = await getUser(userId)
+      this.setUser(user)
+      this.setLoggedInState(true)
+    },
     async register({ email, password, name }: UserAccount) {
       const response = await createUserWithEmailAndPassword(auth, email, password)
       if (response) {
         await createUser({ name, userId: response.user.uid })
         // TODO create normal session in browser using response
         console.log('Register Response', response)
+        await createToken(response.user.uid)
         this.setUser({ name, userId: response.user.uid })
         this.setLoggedInState(true)
       } else {
@@ -78,6 +84,7 @@ export const useChatStore = defineStore('chat', {
         // TODO create normal session in browser using response
         console.log('Login Response', response)
         const user = await getUser(response.user.uid)
+        await createToken(response.user.uid)
         this.setUser(user)
         this.setLoggedInState(true)
       } else {
