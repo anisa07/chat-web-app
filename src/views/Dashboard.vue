@@ -8,7 +8,8 @@ import { ref } from 'vue'
 import {
   submitMessage,
   loadConversationMessages,
-  loadUserConversations
+  loadUserConversations,
+  updateConversationMessages
 } from '@/services/conversationService'
 import type { ArchiveMessage, Conversation, User } from '@/types/app-types'
 import MessageInput from '@/components/MessageInput.vue'
@@ -20,7 +21,7 @@ import { verifyToken } from '@/utils/sessionUtils'
 let socket: Socket | null = null
 
 const router = useRouter()
-const { getUser, findUserById } = useAuthStore()
+const { getUser, findUserById, logOut } = useAuthStore()
 
 const messages = ref<ArchiveMessage[]>([])
 const conversations = ref<Conversation[]>([])
@@ -36,6 +37,7 @@ const getConversationHistory = async (conversationId: string) => {
     (a: ArchiveMessage, b: ArchiveMessage) =>
       new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
   )
+  await updateConversationMessages(conversationId, owner.value?.userId ?? '')
 }
 
 const selectUserToChat = async (user: User) => {
@@ -48,11 +50,12 @@ const selectUserToChat = async (user: User) => {
   if (!conversation) {
     currentConversation.value = { conversationId: '', participants: [user] }
   }
-  getConversationHistory(conversation?.conversationId ?? '')
+  await getConversationHistory(conversation?.conversationId ?? '')
 }
 
 const getUserConversations = async (userId: string) => {
   const response = await loadUserConversations(userId)
+  console.log('response', response)
   conversations.value = response.data
 }
 
@@ -66,7 +69,7 @@ const selectConversation = async (conversationId: string) => {
       newMessage: false
     }
     currentConversation.value = conversations.value[conversationIndex]
-    getConversationHistory(conversationId)
+    await getConversationHistory(conversationId)
   }
 }
 
@@ -83,6 +86,11 @@ const sendMessage = async (value: string) => {
     message: value,
     conversationId: currentConversation.value.conversationId ?? ''
   })
+}
+
+const logOutUser = async () => {
+  await logOut()
+  router.push({ path: '/login' })
 }
 
 onMounted(async () => {
@@ -136,6 +144,8 @@ onMounted(async () => {
           newMessage: false
         }
       }
+
+      updateConversationMessages(msgAsObject.conversationId, owner.value?.userId ?? '')
     }
     const conversationIndex = conversations.value.findIndex(
       (chat) => chat.conversationId === msgAsObject.conversationId
@@ -179,7 +189,17 @@ onBeforeUnmount(() => {
       <SearchInput @select-user="selectUserToChat" />
 
       <!-- List of users -->
-      <Conversations :conversations="conversations" @select-conversation="selectConversation" />
+      <div class="flex-1">
+        <Conversations :conversations="conversations" @select-conversation="selectConversation" />
+      </div>
+
+      <!-- Logout button -->
+      <button
+        class="bg-slate-950 text-white font-bold py-2 px-3 rounded-md w-20"
+        @click="logOutUser"
+      >
+        Logout
+      </button>
     </div>
 
     <div class="flex-1 p-2 flex flex-col">

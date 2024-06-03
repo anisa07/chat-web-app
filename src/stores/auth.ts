@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import { auth } from '@/main'
 import {
   createUser,
@@ -11,7 +11,7 @@ import {
 } from '@/services/userService'
 import type { UserData } from '@/types/UserData'
 import type { UserAccount } from '@/types/UserAccount'
-import { createToken } from '@/utils/sessionUtils'
+import { createToken, resetToken } from '@/utils/sessionUtils'
 
 // export const useCounterStore = defineStore('chatStore', () => {
 //   const count = ref(0)
@@ -82,19 +82,20 @@ export const useAuthStore = defineStore('auth', {
       const response = await signInWithEmailAndPassword(auth, email, password)
       if (response) {
         // TODO create normal session in browser using response
-        console.log('Login Response', response)
         const user = await getUser(response.user.uid)
         await createToken(response.user.uid)
-        this.setUser(user)
+        this.setUser(user.data)
         this.setLoggedInState(true)
       } else {
         throw new Error('login failed')
       }
+    },
+    async logOut() {
+      await signOut(auth)
+      await resetToken()
+      this.setUser(null)
+      this.setLoggedInState(false)
     }
-    // async logOut(context) {
-    //   await signOut(auth)
-    //   context.commit('SET_USER', null)
-    // },
     // async fetchUser(context, user) {
     //   context.commit('SET_LOGGED_IN', user !== null)
     //   if (user) {
