@@ -18,3 +18,9 @@ export const updateConversationMessages = (coversationId: string, userId: string
   axios
     .put(`${url}/archive/coversation/${coversationId}`, { userId })
     .then((response) => response.data)
+
+export const notifyParticipants = (data: {
+  userId: string
+  online: boolean
+  participantIds: string[]
+}) => axios.post(`${url}/archive/notify-participants`, data).then((response) => response.data)

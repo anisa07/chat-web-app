@@ -3,7 +3,8 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } f
 import { auth } from '@/main'
 import {
   createUser,
-  getUser
+  getUser,
+  updateUser
   // findUsers
   // submitMessage,
   // loadUserConversations,
@@ -68,11 +69,10 @@ export const useAuthStore = defineStore('auth', {
     async register({ email, password, name }: UserAccount) {
       const response = await createUserWithEmailAndPassword(auth, email, password)
       if (response) {
-        await createUser({ name, userId: response.user.uid })
+        await createUser({ name, userId: response.user.uid, online: true })
         // TODO create normal session in browser using response
-        console.log('Register Response', response)
         await createToken(response.user.uid)
-        this.setUser({ name, userId: response.user.uid })
+        this.setUser({ name, userId: response.user.uid, online: true })
         this.setLoggedInState(true)
       } else {
         throw new Error('Unable to register user')
@@ -84,6 +84,8 @@ export const useAuthStore = defineStore('auth', {
         // TODO create normal session in browser using response
         const user = await getUser(response.user.uid)
         await createToken(response.user.uid)
+        // update user data in DB
+        await updateUser({ ...user.data, online: true })
         this.setUser(user.data)
         this.setLoggedInState(true)
       } else {
@@ -93,6 +95,11 @@ export const useAuthStore = defineStore('auth', {
     async logOut() {
       await signOut(auth)
       await resetToken()
+      // update user data in DB
+      if (this.user.data) {
+        await updateUser({ ...this.user.data?.data, online: false })
+      }
+      // update user data in DB
       this.setUser(null)
       this.setLoggedInState(false)
     }

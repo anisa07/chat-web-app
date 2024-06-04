@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { ArchiveMessage } from '@/types/app-types'
+import ConversationParticipant from '@/components/ConversationParticipant.vue'
+
 defineProps<{
   messages: ArchiveMessage[]
 }>()
@@ -9,7 +12,10 @@ defineProps<{
     <ul>
       <li v-for="msg in messages" class="mb-2">
         <div>
-          <span class="font-semibold">{{ msg.author.name }}</span> -
+          <span class="font-semibold">
+            <ConversationParticipant :participant="msg.author" />
+          </span>
+          -
           <span class="text-xs">{{ new Date(msg.createdAt).toLocaleString() }}</span>
         </div>
         <div>

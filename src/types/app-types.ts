@@ -1,6 +1,7 @@
 export interface User {
   name: string
   userId: string
+  online?: boolean
 }
 
 export interface ArchiveMessage {

@@ -9,7 +9,8 @@ import {
   submitMessage,
   loadConversationMessages,
   loadUserConversations,
-  updateConversationMessages
+  updateConversationMessages,
+  notifyParticipants
 } from '@/services/conversationService'
 import type { ArchiveMessage, Conversation, User } from '@/types/app-types'
 import MessageInput from '@/components/MessageInput.vue'
@@ -17,6 +18,7 @@ import SearchInput from '@/components/SearchInput.vue'
 import Conversations from '@/components/Conversations.vue'
 import Messages from '@/components/Messages.vue'
 import { verifyToken } from '@/utils/sessionUtils'
+import ConversationParticipant from '@/components/ConversationParticipant.vue'
 
 let socket: Socket | null = null
 
@@ -55,7 +57,6 @@ const selectUserToChat = async (user: User) => {
 
 const getUserConversations = async (userId: string) => {
   const response = await loadUserConversations(userId)
-  console.log('response', response)
   conversations.value = response.data
 }
 
@@ -89,9 +90,23 @@ const sendMessage = async (value: string) => {
 }
 
 const logOutUser = async () => {
+  await notifyParticipants({
+    participantIds: getParticipantIds(),
+    userId: owner.value?.userId ?? '',
+    online: false
+  })
   await logOut()
   router.push({ path: '/login' })
 }
+
+const getParticipantIds = () =>
+  Array.from(
+    new Set(
+      conversations.value
+        .map((conversation) => conversation.participants.map((p) => p.userId))
+        .flat()
+    )
+  )
 
 onMounted(async () => {
   const tokenPayload = await verifyToken()
@@ -108,7 +123,12 @@ onMounted(async () => {
     owner.value = getUser.data.data as User
   }
 
-  getUserConversations(owner.value?.userId ?? '')
+  await getUserConversations(owner.value?.userId ?? '')
+  await notifyParticipants({
+    participantIds: getParticipantIds(),
+    userId: owner.value?.userId ?? '',
+    online: true
+  })
 
   socket = io(import.meta.env.VITE_SERVICE_URL, {
     query: { userId: owner.value?.userId }
@@ -123,7 +143,7 @@ onMounted(async () => {
       msgAsObject.conversationId === currentConversation.value?.conversationId ||
       (!currentConversation.value?.conversationId &&
         currentConversation.value?.participants &&
-        currentConversation.value?.participants.find((p) => p.userId === msgAsObject.from.userId))
+        owner.value?.userId === msgAsObject.from.userId)
     ) {
       messages.value = [
         ...messages.value,
@@ -140,13 +160,17 @@ onMounted(async () => {
       if (!currentConversation.value?.conversationId) {
         currentConversation.value = {
           conversationId: msgAsObject.conversationId,
-          participants: [msgAsObject.from],
+          participants: [...(currentConversation.value?.participants || []), msgAsObject.from],
           newMessage: false
         }
+
+        conversations.value = [...conversations.value, currentConversation.value]
       }
 
       updateConversationMessages(msgAsObject.conversationId, owner.value?.userId ?? '')
+      return
     }
+    console.log('conversations', conversations.value)
     const conversationIndex = conversations.value.findIndex(
       (chat) => chat.conversationId === msgAsObject.conversationId
     )
@@ -166,6 +190,26 @@ onMounted(async () => {
         newMessage: true
       }
     }
+  })
+  socket.on('user-online-status', (message: string) => {
+    const msgAsObject = JSON.parse(message)
+    currentConversation.value?.participants.forEach((participant) => {
+      if (participant.userId === msgAsObject.userId) {
+        participant.online = msgAsObject.online
+      }
+    })
+    conversations.value.forEach((conversation) => {
+      conversation.participants.forEach((participant) => {
+        if (participant.userId === msgAsObject.userId) {
+          participant.online = msgAsObject.online
+        }
+      })
+    })
+    messages.value.forEach((message) => {
+      if (message.author.userId === msgAsObject.userId) {
+        message.author.online = msgAsObject.online
+      }
+    })
   })
   socket.on('disconnect', () => {
     console.log('Socket is disconnected', socket?.id)
@@ -205,12 +249,14 @@ onBeforeUnmount(() => {
     <div class="flex-1 p-2 flex flex-col">
       <div class="">
         To
-        {{
-          currentConversation?.participants
-            // .filter((participant) => participant.userId !== owner.userId)
-            .map((participant) => participant.name)
-            .join(' ') ?? ''
-        }}
+        <span v-for="participant in currentConversation?.participants" class="mr-1">
+          <ConversationParticipant :participant="participant" />
+          <!-- <span
+            class="rounded-full h-3 w-3 inline-block mr-1"
+            :class="{ 'bg-emerald-600': participant.online, 'bg-red-600': !participant.online }"
+          ></span>
+          {{ participant.name }} -->
+        </span>
       </div>
 
       <!-- History prev chat -->
