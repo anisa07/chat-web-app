@@ -11,16 +11,18 @@ export const submitMessage = (message: Message) => {
 export const loadUserConversations = (userId: string) =>
   axios.get(`${url}/archive/${userId}`).then((response) => response.data)
 
-export const loadConversationMessages = (coversationId: string) =>
-  axios.get(`${url}/archive/coversation/${coversationId}`).then((response) => response.data)
+export const loadConversationMessages = (userId: string, coversationId: string) =>
+  axios
+    .get(`${url}/archive/coversation/${userId}/${coversationId}`)
+    .then((response) => response.data)
 
 export const updateConversationMessages = (coversationId: string, userId: string) =>
   axios
     .put(`${url}/archive/coversation/${coversationId}`, { userId })
     .then((response) => response.data)
 
-export const notifyParticipants = (data: {
-  userId: string
-  online: boolean
-  participantIds: string[]
-}) => axios.post(`${url}/archive/notify-participants`, data).then((response) => response.data)
+// export const notifyParticipants = (data: {
+//   userId: string
+//   online: boolean
+//   participantIds: string[]
+// }) => axios.post(`${url}/archive/notify-participants`, data).then((response) => response.data)

@@ -9,8 +9,8 @@ import {
   submitMessage,
   loadConversationMessages,
   loadUserConversations,
-  updateConversationMessages,
-  notifyParticipants
+  updateConversationMessages
+  // notifyParticipants
 } from '@/services/conversationService'
 import type { ArchiveMessage, Conversation, User } from '@/types/app-types'
 import MessageInput from '@/components/MessageInput.vue'
@@ -19,6 +19,7 @@ import Conversations from '@/components/Conversations.vue'
 import Messages from '@/components/Messages.vue'
 import { verifyToken } from '@/utils/sessionUtils'
 import ConversationParticipant from '@/components/ConversationParticipant.vue'
+import { debounce } from '../utils/debounce'
 
 let socket: Socket | null = null
 
@@ -29,12 +30,28 @@ const messages = ref<ArchiveMessage[]>([])
 const conversations = ref<Conversation[]>([])
 const owner = ref<User | null>(null)
 const currentConversation = ref<Conversation | null>(null)
+const typing = ref<string[]>([])
+
+const typeMessage = debounce((value: string) => {
+  if (socket && currentConversation && owner.value) {
+    socket.emit(
+      'user-typing',
+      JSON.stringify({
+        conversationId: currentConversation.value?.conversationId,
+        participantIds: (currentConversation.value?.participants || []).map((p) => p.userId),
+        user: owner.value.name,
+        userId: owner.value.userId,
+        typing: value
+      })
+    )
+  }
+})
 
 const getConversationHistory = async (conversationId: string) => {
-  if (!conversationId) {
+  if (!conversationId || !owner.value?.userId) {
     return
   }
-  const response = await loadConversationMessages(conversationId)
+  const response = await loadConversationMessages(owner.value?.userId, conversationId)
   messages.value = response.data.sort(
     (a: ArchiveMessage, b: ArchiveMessage) =>
       new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
@@ -90,11 +107,14 @@ const sendMessage = async (value: string) => {
 }
 
 const logOutUser = async () => {
-  await notifyParticipants({
-    participantIds: getParticipantIds(),
-    userId: owner.value?.userId ?? '',
-    online: false
-  })
+  socket?.emit(
+    'notification',
+    JSON.stringify({
+      participantIds: getParticipantIds(),
+      userId: owner.value?.userId ?? '',
+      online: false
+    })
+  )
   await logOut()
   router.push({ path: '/login' })
 }
@@ -124,19 +144,35 @@ onMounted(async () => {
   }
 
   await getUserConversations(owner.value?.userId ?? '')
-  await notifyParticipants({
-    participantIds: getParticipantIds(),
-    userId: owner.value?.userId ?? '',
-    online: true
-  })
+  // await notifyParticipants({
+  //   participantIds: getParticipantIds(),
+  //   userId: owner.value?.userId ?? '',
+  //   online: true
+  // })
+
+  // {
+  //   participantIds: getParticipantIds(),
+  //   userId: owner.value?.userId ?? '',
+  //   online: true
+  // }
 
   socket = io(import.meta.env.VITE_SERVICE_URL, {
     query: { userId: owner.value?.userId }
   })
+
   socket.on('connect', () => {
     console.log('Successfully connected to the server')
     console.log('Client socket ID is', socket?.id)
+    socket?.emit(
+      'notification',
+      JSON.stringify({
+        participantIds: getParticipantIds(),
+        userId: owner.value?.userId ?? '',
+        online: true
+      })
+    )
   })
+
   socket.on('message', (message: string) => {
     const msgAsObject = JSON.parse(message)
     if (
@@ -191,6 +227,23 @@ onMounted(async () => {
       }
     }
   })
+
+  socket.on('typing', (message: string) => {
+    const data = JSON.parse(message)
+    if (
+      data.userId !== owner.value?.userId &&
+      currentConversation.value?.conversationId === data.conversationId &&
+      currentConversation.value?.participants.find((p) => p.userId === data.userId)
+    ) {
+      if (data.typing === 'typing' && !typing.value.includes(data.user)) {
+        typing.value = [...typing.value, data.user]
+      }
+      if (data.typing === 'stop' && typing.value.includes(data.user)) {
+        typing.value = typing.value.filter((user) => user !== data.user)
+      }
+    }
+  })
+
   socket.on('user-online-status', (message: string) => {
     const msgAsObject = JSON.parse(message)
     currentConversation.value?.participants.forEach((participant) => {
@@ -211,9 +264,11 @@ onMounted(async () => {
       }
     })
   })
+
   socket.on('disconnect', () => {
     console.log('Socket is disconnected', socket?.id)
   })
+
   socket.on('connect_error', () => {
     setTimeout(() => {
       socket?.connect()
@@ -269,7 +324,11 @@ onBeforeUnmount(() => {
       <MessageInput
         :disabledSendButton="currentConversation?.participants?.length === 0"
         @send-message="sendMessage"
+        @typing-message="typeMessage"
       />
+      <p v-if="currentConversation" v-for="user in typing">
+        <span>{{ user }} is typing... </span>
+      </p>
     </div>
   </div>
 </template>
