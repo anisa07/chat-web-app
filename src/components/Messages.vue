@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex-1 border border-slate-950 p-2">
+  <div class="flex-1 border border-slate-950 p-2 overflow-auto">
     <ul>
       <li v-for="msg in messages" class="mb-2">
         <div>

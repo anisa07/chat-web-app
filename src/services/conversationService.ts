@@ -1,4 +1,5 @@
 import type { Message } from '@/types/Message'
+import type { Conversation } from '@/types/app-types'
 import axios from 'axios'
 
 const url = import.meta.env.VITE_SERVICE_URL
@@ -18,8 +19,18 @@ export const loadConversationMessages = (userId: string, coversationId: string) 
 
 export const updateConversationMessages = (coversationId: string, userId: string) =>
   axios
-    .put(`${url}/archive/coversation/${coversationId}`, { userId })
+    .put(`${url}/archive/coversation/${coversationId}/messages`, { userId })
     .then((response) => response.data)
+
+export const updateConversation = (conversation: {
+  conversationId: string
+  newUser: { userId: string; name: string }
+  shareOldMessages: boolean
+}) => {
+  axios
+    .put(`${url}/archive/coversation/${conversation.conversationId}`, conversation)
+    .then((response) => response.data)
+}
 
 // export const notifyParticipants = (data: {
 //   userId: string

@@ -9,7 +9,8 @@ import {
   submitMessage,
   loadConversationMessages,
   loadUserConversations,
-  updateConversationMessages
+  updateConversationMessages,
+  updateConversation
   // notifyParticipants
 } from '@/services/conversationService'
 import type { ArchiveMessage, Conversation, User } from '@/types/app-types'
@@ -70,6 +71,42 @@ const selectUserToChat = async (user: User) => {
     currentConversation.value = { conversationId: '', participants: [user] }
   }
   await getConversationHistory(conversation?.conversationId ?? '')
+}
+
+const addNewUserToChat = async (user: User) => {
+  const index = conversations.value.findIndex(
+    (conversation) => conversation.conversationId === currentConversation.value?.conversationId
+  )
+
+  if (!currentConversation.value) {
+    return
+  }
+
+  if (currentConversation.value.participants.find((p) => p.userId === user.userId)) {
+    return
+  }
+
+  if (index === -1) {
+    return
+  }
+
+  console.log(user)
+
+  conversations.value[index] = {
+    ...conversations.value[index],
+    participants: [...conversations.value[index].participants, user]
+  }
+
+  currentConversation.value = {
+    ...currentConversation.value,
+    participants: [...currentConversation.value.participants, user]
+  }
+
+  await updateConversation({
+    conversationId: currentConversation.value.conversationId,
+    newUser: user,
+    shareOldMessages: false
+  })
 }
 
 const getUserConversations = async (userId: string) => {
@@ -265,6 +302,18 @@ onMounted(async () => {
     })
   })
 
+  socket.on('join-conversation', (message: string) => {
+    const data = JSON.parse(message)
+    conversations.value = [
+      ...conversations.value,
+      {
+        conversationId: data.conversationId,
+        participants: data.participants,
+        newMessage: true
+      }
+    ]
+  })
+
   socket.on('disconnect', () => {
     console.log('Socket is disconnected', socket?.id)
   })
@@ -302,6 +351,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="flex-1 p-2 flex flex-col">
+      <SearchInput v-if="currentConversation" @select-user="addNewUserToChat" />
       <div class="">
         To
         <span v-for="participant in currentConversation?.participants" class="mr-1">
