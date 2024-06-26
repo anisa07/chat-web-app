@@ -139,6 +139,12 @@ const sendMessage = async (value: string) => {
   if (!currentConversation.value) {
     return
   }
+  console.log({
+    fromId: owner.value.userId,
+    toIds: currentConversation.value.participants.map((p) => p.userId),
+    message: value,
+    conversationId: currentConversation.value.conversationId ?? ''
+  })
   await submitMessage({
     fromId: owner.value.userId,
     toIds: currentConversation.value.participants.map((p) => p.userId),
@@ -217,6 +223,18 @@ onMounted(async () => {
   socket.on('message', (message: string) => {
     const msgAsObject = JSON.parse(message)
     console.log(msgAsObject)
+    // JSON.stringify({
+    //       message: data.message,
+    //       from: {
+    //         userId: messageAuthor?.userId,
+    //         name: messageAuthor?.name,
+    //         online: messageAuthor?.online,
+    //       },
+    //       createdAt: data.createdAt,
+    //       messageId: data.messageId,
+    //       conversationId: data.conversationId,
+    //       participants: data.participantUsers,
+    //     }),
     if (
       msgAsObject.conversationId === currentConversation.value?.conversationId ||
       (!currentConversation.value?.conversationId &&
@@ -239,7 +257,7 @@ onMounted(async () => {
       if (!currentConversation.value?.conversationId) {
         currentConversation.value = {
           conversationId: msgAsObject.conversationId,
-          participants: [...(currentConversation.value?.participants || []), msgAsObject.from],
+          participants: msgAsObject.participants, //[...(currentConversation.value?.participants || []), msgAsObject.from],
           newMessage: false
         }
 
@@ -258,7 +276,7 @@ onMounted(async () => {
         ...conversations.value,
         {
           conversationId: msgAsObject.conversationId,
-          participants: [msgAsObject.from],
+          participants: msgAsObject.participants, // [msgAsObject.from],
           newMessage
         }
       ]
