@@ -1,13 +1,11 @@
-import { createUserToken, verifyUserToken, deleteUserToken } from '@/services/authService'
+import { verifyUserToken } from '@/services/authService'
 
-export const createToken = async (userId: string) => {
-  const userData = await createUserToken(userId)
-
+export const createToken = async (userId: string, token: string) => {
   localStorage.setItem(
     import.meta.env.VITE_STORAGE_TOKEN,
     JSON.stringify({
-      token: userData.token,
-      userId: userId
+      token,
+      userId
     })
   )
 }
@@ -19,8 +17,8 @@ export const verifyToken = async () => {
     return
   }
   try {
-    const verifyResult = await verifyUserToken(JSON.parse(userData))
-    return { ...verifyResult, userId: JSON.parse(userData).userId }
+    await verifyUserToken()
+    return { userId: JSON.parse(userData).userId }
   } catch (error) {
     console.error(error)
   }
@@ -34,6 +32,4 @@ export const resetToken = async () => {
   }
 
   localStorage.removeItem(import.meta.env.VITE_STORAGE_TOKEN)
-
-  await deleteUserToken(JSON.parse(userData).userId)
 }

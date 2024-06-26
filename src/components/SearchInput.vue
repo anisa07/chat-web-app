@@ -9,7 +9,7 @@ const users = ref<User[]>([])
 
 const searchUsers = async () => {
   const response = await findUserByName(search.value)
-  users.value = response.data ?? []
+  users.value = response ?? []
   search.value = ''
 }
 

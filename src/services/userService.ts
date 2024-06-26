@@ -9,12 +9,8 @@ export const createUser = (user: UserData) =>
 export const updateUser = (user: UserData) =>
   axios.put(`${url}/users/${user.userId}`, user).then((response) => response.data)
 
-export const getUser = (
-  userId: string
-): Promise<{
-  message: string
-  data: UserData
-}> => axios.get(`${url}/users/${userId}`).then((response) => response.data)
+export const getUser = (userId: string): Promise<UserData> =>
+  axios.get(`${url}/users/${userId}`).then((response) => response.data)
 
 export const findUserByName = (userName: string) =>
   axios.get(`${url}/users/?name=${userName}`).then((response) => response.data)

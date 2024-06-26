@@ -9,7 +9,7 @@ import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { plugin, defaultConfig } from '@formkit/vue'
 import './index.css'
-import firebase from 'firebase/compat/app'
+import axios from 'axios'
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -27,13 +27,37 @@ const firebaseConfig = {
 initializeApp(firebaseConfig)
 export const auth = getAuth()
 
-// // As httpOnly cookies are to be used, do not persist any state client side.
-// firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE)
-
 const app = createApp(App)
-
+const url = import.meta.env.VITE_SERVICE_URL
 app.use(plugin, defaultConfig)
 app.use(createPinia())
 app.use(router)
+
+// Request interceptors
+axios.interceptors.request.use(
+  (config) => {
+    // Do or set some things before the request is set
+    const userData = localStorage.getItem(import.meta.env.VITE_STORAGE_TOKEN)
+    const parsedData = { token: '', userId: '' }
+    if (userData) {
+      parsedData.token = JSON.parse(userData).token
+      parsedData.userId = JSON.parse(userData).userId
+    }
+    // e.g. Authorization header
+    config.headers['Authorization'] = `Bearer ${parsedData.token}`
+    config.headers['userId'] = parsedData.userId || ''
+
+    // e.g. Content-type
+    config.headers['Content-Type'] = 'application/json'
+
+    // e.g. set Base url
+    config.baseURL = url
+
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
 
 app.mount('#app')

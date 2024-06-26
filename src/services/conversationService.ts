@@ -5,7 +5,6 @@ import axios from 'axios'
 const url = import.meta.env.VITE_SERVICE_URL
 
 export const submitMessage = (message: Message) => {
-  console.log(`${url}/archive`)
   return axios.post(`${url}/archive`, message)
 }
 

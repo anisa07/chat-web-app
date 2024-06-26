@@ -53,7 +53,7 @@ const getConversationHistory = async (conversationId: string) => {
     return
   }
   const response = await loadConversationMessages(owner.value?.userId, conversationId)
-  messages.value = response.data.sort(
+  messages.value = response.sort(
     (a: ArchiveMessage, b: ArchiveMessage) =>
       new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
   )
@@ -86,11 +86,16 @@ const addNewUserToChat = async (user: User) => {
     return
   }
 
+  if (currentConversation.value.conversationId === '') {
+    currentConversation.value = {
+      ...currentConversation.value,
+      participants: [...currentConversation.value.participants, user]
+    }
+  }
+
   if (index === -1) {
     return
   }
-
-  console.log(user)
 
   conversations.value[index] = {
     ...conversations.value[index],
@@ -110,8 +115,7 @@ const addNewUserToChat = async (user: User) => {
 }
 
 const getUserConversations = async (userId: string) => {
-  const response = await loadUserConversations(userId)
-  conversations.value = response.data
+  conversations.value = await loadUserConversations(userId)
 }
 
 const selectConversation = async (conversationId: string) => {
@@ -176,8 +180,8 @@ onMounted(async () => {
     return
   }
 
-  if (getUser.data && getUser.data.data) {
-    owner.value = getUser.data.data as User
+  if (getUser.data && getUser.data) {
+    owner.value = getUser.data as User
   }
 
   await getUserConversations(owner.value?.userId ?? '')
@@ -212,6 +216,7 @@ onMounted(async () => {
 
   socket.on('message', (message: string) => {
     const msgAsObject = JSON.parse(message)
+    console.log(msgAsObject)
     if (
       msgAsObject.conversationId === currentConversation.value?.conversationId ||
       (!currentConversation.value?.conversationId &&
@@ -226,7 +231,8 @@ onMounted(async () => {
           createdAt: msgAsObject.createdAt,
           author: {
             name: msgAsObject.from.name,
-            userId: msgAsObject.from.userId
+            userId: msgAsObject.from.userId,
+            online: msgAsObject.from.online
           }
         }
       ]
@@ -243,7 +249,6 @@ onMounted(async () => {
       updateConversationMessages(msgAsObject.conversationId, owner.value?.userId ?? '')
       return
     }
-    console.log('conversations', conversations.value)
     const conversationIndex = conversations.value.findIndex(
       (chat) => chat.conversationId === msgAsObject.conversationId
     )

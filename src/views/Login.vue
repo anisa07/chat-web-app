@@ -33,7 +33,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto mt-8 w-8/12 rounded-sm border-2 border-pink-600">
+  <div class="mx-auto mt-8 w-8/12 max-w-lg rounded-sm border-2 border-pink-600">
     <div class="p-4">
       <FormKit
         type="form"
