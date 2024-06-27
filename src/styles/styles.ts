@@ -8,7 +8,7 @@ export const submitButtonClasses = {
 }
 
 export const formClasses = {
-  outer: 'mb-4',
+  outer: 'mb-1',
   label: 'block mb-1 font-bold text-sm',
   input: 'text-gray-800 mb-1 w-full',
   help: 'text-xs text-gray-500',

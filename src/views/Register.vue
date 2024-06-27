@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { formInputClasses, submitButtonClasses, formClasses } from '../styles/styles'
 import { useRouter } from 'vue-router'
 import { verifyToken } from '@/utils/sessionUtils'
+import AuthWrapper from '@/components/AuthWrapper.vue'
 
 const router = useRouter()
 const { register, getUser, findUserById } = useAuthStore()
@@ -33,8 +34,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto mt-8 w-8/12 max-w-lg rounded-sm border-2 border-pink-600">
-    <div class="p-4">
+  <AuthWrapper>
+    <div class="px-6 pt-4">
       <FormKit
         type="form"
         id="registration-example"
@@ -47,11 +48,11 @@ onMounted(async () => {
           classes: formClasses
         }"
       >
-        <h1 class="text-2xl font-bold mb-2">Register!</h1>
+        <h1 class="text-2xl font-bold mb-2 text-center">Register</h1>
         <FormKit
           type="text"
           name="name"
-          label="Your name"
+          label="Name"
           placeholder="Melisandre"
           validation="required"
           :classes="formInputClasses"
@@ -59,7 +60,7 @@ onMounted(async () => {
         <FormKit
           type="text"
           name="email"
-          label="Your email"
+          label="Email"
           placeholder="red_woman@example.com"
           validation="required|email"
           :classes="formInputClasses"
@@ -73,14 +74,14 @@ onMounted(async () => {
             :validation-messages="{
               matches: 'Please include at least one symbol'
             }"
-            placeholder="Your password"
+            placeholder="*******"
             :classes="formInputClasses"
           />
           <FormKit
             type="password"
             name="password_confirm"
             label="Confirm password"
-            placeholder="Confirm password"
+            placeholder="*******"
             validation="required|confirm"
             :classes="formInputClasses"
           />
@@ -94,7 +95,7 @@ onMounted(async () => {
       </p>
     </div>
     <div v-if="submitError">
-      <h2 class="text-xl text-red-500 p-4">{{ submitError }}</h2>
+      <h2 class="text-lg text-red-500 px-6">{{ submitError }}</h2>
     </div>
-  </div>
+  </AuthWrapper>
 </template>
