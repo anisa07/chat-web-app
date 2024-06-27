@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.auth-container {
+  @apply h-full bg-gradient-to-b from-gray-200 to-gray-400;
+}
+
+.login-container {
+  @apply h-full flex items-center justify-center mx-auto;
+}
+
+.login-form-wrapper {
+  @apply w-8/12 h-3/4 max-w-lg rounded rounded-tl-md rounded-bl-md shadow-md py-16 px-6 bg-white md:rounded-tr-none md:rounded-br-none;
+}
+
+.login-image {
+  @apply w-4/12 h-3/4 shadow-md md:block hidden rounded-tr-md rounded-br-md;
+}

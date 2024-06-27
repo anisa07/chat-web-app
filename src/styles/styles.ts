@@ -4,7 +4,7 @@ export const formInputClasses = {
 
 export const submitButtonClasses = {
   outer: 'mb-0',
-  input: 'bg-pink-600 text-white font-bold py-2 px-3 rounded-md w-auto'
+  input: 'bg-pink-600 text-white font-bold py-2 px-3 rounded-md w-36'
 }
 
 export const formClasses = {
