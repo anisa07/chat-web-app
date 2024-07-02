@@ -7,11 +7,13 @@ defineProps<{
 </script>
 
 <template>
-  <span
-    class="rounded-full h-3 w-3 inline-block mr-1"
-    :class="{ 'bg-emerald-600': participant.online, 'bg-red-600': !participant.online }"
-  ></span>
-  {{ participant.name }}
+  <span>
+    <span
+      class="rounded-full h-2 w-2 inline-block"
+      :class="{ 'bg-emerald-600': participant.online, 'bg-red-600': !participant.online }"
+    ></span>
+    {{ participant.name }}
+  </span>
 </template>
 
 <style scoped></style>

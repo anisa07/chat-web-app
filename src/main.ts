@@ -2,6 +2,9 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faUser, faComment } from '@fortawesome/free-regular-svg-icons'
 import App from './App.vue'
 import router from './router'
 // Import the functions you need from the SDKs you need
@@ -27,8 +30,12 @@ const firebaseConfig = {
 initializeApp(firebaseConfig)
 export const auth = getAuth()
 
+library.add(faUser)
+library.add(faComment)
+
 const app = createApp(App)
 const url = import.meta.env.VITE_SERVICE_URL
+app.component('font-awesome-icon', FontAwesomeIcon)
 app.use(plugin, defaultConfig)
 app.use(createPinia())
 app.use(router)

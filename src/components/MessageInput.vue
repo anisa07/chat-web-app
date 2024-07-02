@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   disabledSendButton: boolean
 }>()
 
@@ -9,6 +9,7 @@ const emit = defineEmits(['send-message', 'typing-message'])
 const message = ref('')
 
 const sendMessage = () => {
+  if (props.disabledSendButton) return
   emit('send-message', message.value)
   message.value = ''
   emit('typing-message', 'stop')
@@ -23,21 +24,24 @@ const onChange = () => {
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col p-2 relative">
     <textarea
-      class="block resize-none mb-1 p-2 border border-slate-950"
-      rows="5"
+      class="message-input"
+      rows="1"
       v-model="message"
       v-on:keydown="onChange"
+      v-on:keyup.enter="sendMessage"
     />
-    <button
-      :disabled="disabledSendButton"
-      class="bg-pink-600 text-white font-bold py-2 px-3 rounded-md w-44"
-      @click="sendMessage"
-    >
-      Send
-    </button>
+    <font-awesome-icon
+      icon="fa-regular fa-comment"
+      class="absolute p-3 right-1 cursor-pointer w-5 h-5 text-slate-600"
+      v-on:click="sendMessage"
+    />
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.message-input {
+  @apply block resize-none mb-1 p-2 pr-3 border outline-none rounded-md border-slate-200 bg-slate-100;
+}
+</style>

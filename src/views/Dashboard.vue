@@ -356,12 +356,20 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex h-full">
-    <div class="flex flex-col p-4 mr-2 border-r border-r-slate-950">
-      <SearchInput @select-user="selectUserToChat" />
+    <div class="flex flex-col gap-4 px-4 py-2 border-r border-r-slate-300">
+      <div>
+        <p class="text-lg font-semibold">Chat</p>
+        <SearchInput @select-user="selectUserToChat" />
+      </div>
 
       <!-- List of users -->
       <div class="flex-1">
-        <Conversations :conversations="conversations" @select-conversation="selectConversation" />
+        <p class="text-lg font-semibold" v-if="conversations.length">Recently contacted</p>
+        <Conversations
+          :currentConversationId="currentConversation?.conversationId"
+          :conversations="conversations"
+          @select-conversation="selectConversation"
+        />
       </div>
 
       <!-- Logout button -->
@@ -373,25 +381,26 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <div class="flex-1 p-2 flex flex-col">
-      <SearchInput v-if="currentConversation" @select-user="addNewUserToChat" />
-      <div class="">
-        To
-        <span v-for="participant in currentConversation?.participants" class="mr-1">
-          <ConversationParticipant :participant="participant" />
-          <!-- <span
-            class="rounded-full h-3 w-3 inline-block mr-1"
-            :class="{ 'bg-emerald-600': participant.online, 'bg-red-600': !participant.online }"
-          ></span>
-          {{ participant.name }} -->
-        </span>
+    <div class="flex-1 flex flex-col">
+      <div class="flex flex-col py-2 px-4">
+        <div class="flex justify-between">
+          <p class="text-lg font-semibold">Messages</p>
+          <SearchInput v-if="currentConversation" @select-user="addNewUserToChat" />
+        </div>
+        <div>
+          <span v-for="participant in currentConversation?.participants">
+            <span v-if="getUser.data?.userId !== participant.userId" class="mr-2">
+              <ConversationParticipant :participant="participant" />
+            </span>
+          </span>
+        </div>
       </div>
 
       <!-- History prev chat -->
       <Messages :messages="messages" />
 
       <!-- Our user name and status -->
-      <div class="owner">From {{ owner?.name }}</div>
+      <!-- <div class="owner px-2 mt-2">From {{ owner?.name }}</div> -->
 
       <!-- Typing area -->
       <MessageInput
