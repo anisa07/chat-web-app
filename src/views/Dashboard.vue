@@ -11,7 +11,6 @@ import {
   loadUserConversations,
   updateConversationMessages,
   updateConversation
-  // notifyParticipants
 } from '@/services/conversationService'
 import type { ArchiveMessage, Conversation, User } from '@/types/app-types'
 import MessageInput from '@/components/MessageInput.vue'
@@ -139,12 +138,6 @@ const sendMessage = async (value: string) => {
   if (!currentConversation.value) {
     return
   }
-  console.log({
-    fromId: owner.value.userId,
-    toIds: currentConversation.value.participants.map((p) => p.userId),
-    message: value,
-    conversationId: currentConversation.value.conversationId ?? ''
-  })
   await submitMessage({
     fromId: owner.value.userId,
     toIds: currentConversation.value.participants.map((p) => p.userId),
@@ -191,17 +184,6 @@ onMounted(async () => {
   }
 
   await getUserConversations(owner.value?.userId ?? '')
-  // await notifyParticipants({
-  //   participantIds: getParticipantIds(),
-  //   userId: owner.value?.userId ?? '',
-  //   online: true
-  // })
-
-  // {
-  //   participantIds: getParticipantIds(),
-  //   userId: owner.value?.userId ?? '',
-  //   online: true
-  // }
 
   socket = io(import.meta.env.VITE_SERVICE_URL, {
     query: { userId: owner.value?.userId }
@@ -222,19 +204,6 @@ onMounted(async () => {
 
   socket.on('message', (message: string) => {
     const msgAsObject = JSON.parse(message)
-    console.log(msgAsObject)
-    // JSON.stringify({
-    //       message: data.message,
-    //       from: {
-    //         userId: messageAuthor?.userId,
-    //         name: messageAuthor?.name,
-    //         online: messageAuthor?.online,
-    //       },
-    //       createdAt: data.createdAt,
-    //       messageId: data.messageId,
-    //       conversationId: data.conversationId,
-    //       participants: data.participantUsers,
-    //     }),
     if (
       msgAsObject.conversationId === currentConversation.value?.conversationId ||
       (!currentConversation.value?.conversationId &&
@@ -339,6 +308,14 @@ onMounted(async () => {
 
   socket.on('disconnect', () => {
     console.log('Socket is disconnected', socket?.id)
+    socket?.emit(
+      'notification',
+      JSON.stringify({
+        participantIds: getParticipantIds(),
+        userId: owner.value?.userId ?? '',
+        online: false
+      })
+    )
   })
 
   socket.on('connect_error', () => {
@@ -399,18 +376,17 @@ onBeforeUnmount(() => {
       <!-- History prev chat -->
       <Messages :messages="messages" />
 
-      <!-- Our user name and status -->
-      <!-- <div class="owner px-2 mt-2">From {{ owner?.name }}</div> -->
-
       <!-- Typing area -->
       <MessageInput
         :disabledSendButton="currentConversation?.participants?.length === 0"
         @send-message="sendMessage"
         @typing-message="typeMessage"
       />
-      <p v-if="currentConversation" v-for="user in typing">
-        <span>{{ user }} is typing... </span>
-      </p>
+      <div class="px-2 mb-1 min-h-[15px]">
+        <div v-for="user in typing">
+          <span v-show="currentConversation" class="text-xs">{{ user }} is typing... </span>
+        </div>
+      </div>
     </div>
   </div>
 </template>

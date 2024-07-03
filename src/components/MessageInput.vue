@@ -24,7 +24,7 @@ const onChange = () => {
 </script>
 
 <template>
-  <div class="flex flex-col p-2 relative">
+  <div class="flex flex-col p-2 pb-0 relative">
     <textarea
       class="message-input"
       rows="1"

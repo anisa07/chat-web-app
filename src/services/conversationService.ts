@@ -30,9 +30,3 @@ export const updateConversation = (conversation: {
     .put(`${url}/archive/coversation/${conversation.conversationId}`, conversation)
     .then((response) => response.data)
 }
-
-// export const notifyParticipants = (data: {
-//   userId: string
-//   online: boolean
-//   participantIds: string[]
-// }) => axios.post(`${url}/archive/notify-participants`, data).then((response) => response.data)

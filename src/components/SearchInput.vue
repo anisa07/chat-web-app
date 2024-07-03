@@ -29,8 +29,7 @@ watch(search, async (value) => {
   debouncedFetch(value)
 })
 
-onClickOutside(target, (event) => {
-  console.log(event)
+onClickOutside(target, () => {
   users.value = []
   search.value = ''
 })
