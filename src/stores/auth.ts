@@ -35,8 +35,8 @@ export const useAuthStore = defineStore('auth', {
       if (response) {
         const token = await response.user.getIdToken()
         await createToken(response.user.uid, token)
-        await createUser({ name, userId: response.user.uid, online: true })
-        this.setUser({ name, userId: response.user.uid, online: true })
+        await createUser({ name, userId: response.user.uid })
+        this.setUser({ name, userId: response.user.uid })
         this.setLoggedInState(true)
       } else {
         throw new Error('Unable to register user')
@@ -46,10 +46,10 @@ export const useAuthStore = defineStore('auth', {
       const response = await signInWithEmailAndPassword(auth, email, password)
       if (response) {
         const userResponse = response.user
-        const user = await getUser(userResponse.uid)
         const token = await userResponse.getIdToken()
         await createToken(userResponse.uid, token)
-        await updateUser({ ...user, online: true })
+        const user = await getUser(userResponse.uid)
+        // await updateUser({ ...user, online: true })
         this.setUser(user)
         this.setLoggedInState(true)
       } else {
@@ -59,9 +59,9 @@ export const useAuthStore = defineStore('auth', {
     async logOut() {
       await signOut(auth)
       await resetToken()
-      if (this.user.data) {
-        await updateUser({ ...this.user.data, online: false })
-      }
+      // if (this.user.data) {
+      //   await updateUser({ ...this.user.data, online: false })
+      // }
       this.setUser(null)
       this.setLoggedInState(false)
     }
