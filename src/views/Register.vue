@@ -1,23 +1,26 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { formInputClasses, submitButtonClasses, formClasses } from '../styles/styles'
 import { useRouter } from 'vue-router'
 import { verifyToken } from '@/utils/sessionUtils'
 import AuthWrapper from '@/components/AuthWrapper.vue'
+import type { UserAccount } from '@/types/UserAccount'
 
 const router = useRouter()
 const { register, getUser, findUserById } = useAuthStore()
 const submitted = ref(false)
-const submitError = ref(null)
-const handleSubmit = async (v) => {
+const submitError = ref<string | null>(null)
+const handleSubmit = async (v: UserAccount) => {
   try {
     await register(v)
     submitted.value = true
     router.push({ path: '/' })
   } catch (e) {
-    submitError.value = typeof e === 'string' ? e : e.message
-    console.error(e)
+    if (e instanceof Error) {
+      return (submitError.value = e.message)
+    }
+    submitError.value = typeof e === 'string' ? e : 'Unexpected error occurred.'
   }
 }
 
