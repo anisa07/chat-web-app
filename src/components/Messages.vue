@@ -16,7 +16,7 @@ const isAuthor = (msg: ArchiveMessage) => getUser.data?.userId === msg.author.us
     <ul class="flex flex-col">
       <li
         v-for="msg in messages"
-        class="mb-2 w-1/2"
+        class="mb-2 w-2/3"
         :key="msg.messageId"
         :class="{ 'self-end': isAuthor(msg) }"
       >

@@ -60,6 +60,7 @@ const getConversationHistory = async (conversationId: string) => {
 }
 
 const selectUserToChat = async (user: User) => {
+  messages.value = []
   const conversation = conversations.value.find(
     (chat) => chat.participants.length === 1 && chat.participants[0].userId === user.userId
   )
@@ -132,10 +133,12 @@ const selectConversation = async (conversationId: string) => {
 }
 
 const sendMessage = async (value: string) => {
-  if (!owner.value || !value) {
-    return
-  }
-  if (!currentConversation.value) {
+  if (
+    !owner.value ||
+    !value ||
+    !currentConversation.value ||
+    !currentConversation.value.participants.length
+  ) {
     return
   }
   await submitMessage({
@@ -190,8 +193,6 @@ onMounted(async () => {
   })
 
   socket.on('connect', () => {
-    console.log('Successfully connected to the server')
-    console.log('Client socket ID is', socket?.id)
     socket?.emit(
       'notification',
       JSON.stringify({
@@ -307,7 +308,6 @@ onMounted(async () => {
   })
 
   socket.on('disconnect', () => {
-    console.log('Socket is disconnected', socket?.id)
     socket?.emit(
       'notification',
       JSON.stringify({
