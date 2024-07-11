@@ -27,7 +27,9 @@ const router = useRouter()
 const { getUser, findUserById, logOut } = useAuthStore()
 
 const messages = ref<ArchiveMessage[]>([])
+const messagesCount = ref<number>(0)
 const conversations = ref<Conversation[]>([])
+const conversationsCount = ref<number>(0)
 const owner = ref<User | null>(null)
 const currentConversation = ref<Conversation | null>(null)
 const typing = ref<string[]>([])
@@ -47,30 +49,44 @@ const typeMessage = debounce((value: string) => {
   }
 })
 
-const getConversationHistory = async (conversationId: string) => {
+const handleLoadMoreMessages = async () => {
+  if (messagesCount.value > messages.value.length) {
+    console.log('loading more messages ...')
+    await getConversationHistory(
+      currentConversation.value?.conversationId ?? '',
+      new Date(messages.value[0].createdAt)
+    )
+  }
+}
+
+const getConversationHistory = async (conversationId: string, date: Date) => {
   if (!conversationId || !owner.value?.userId) {
     return
   }
-  const response = await loadConversationMessages(owner.value?.userId, conversationId)
-  messages.value = response.sort(
+  const { messages: conversationMessages, messagesCount: messagesLength } =
+    await loadConversationMessages(owner.value?.userId, conversationId, date.toString())
+  const sortedMessages = conversationMessages.sort(
     (a: ArchiveMessage, b: ArchiveMessage) =>
       new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
   )
+  messages.value = [...sortedMessages, ...messages.value]
+  messagesCount.value = messagesLength
   await updateConversationMessages(conversationId, owner.value?.userId ?? '')
 }
 
 const selectUserToChat = async (user: User) => {
   messages.value = []
+  messagesCount.value = 0
   const conversation = conversations.value.find(
     (chat) => chat.participants.length === 1 && chat.participants[0].userId === user.userId
   )
   if (conversation) {
     currentConversation.value = conversation
+    await getConversationHistory(conversation.conversationId ?? '', new Date())
   }
   if (!conversation) {
-    currentConversation.value = { conversationId: '', participants: [user] }
+    currentConversation.value = { conversationId: '', participants: [user], createdAt: '' }
   }
-  await getConversationHistory(conversation?.conversationId ?? '')
 }
 
 const addNewUserToChat = async (user: User) => {
@@ -114,11 +130,16 @@ const addNewUserToChat = async (user: User) => {
   })
 }
 
-const getUserConversations = async (userId: string) => {
-  conversations.value = await loadUserConversations(userId)
+const getUserConversations = async (userId: string, date: Date) => {
+  const { conversations: userConversations, conversationsCount: conversationsLength } =
+    await loadUserConversations(userId, date.toString())
+  conversationsCount.value = conversationsLength
+  conversations.value = [...conversations.value, ...userConversations]
 }
 
 const selectConversation = async (conversationId: string) => {
+  messages.value = []
+  messagesCount.value = 0
   const conversationIndex = conversations.value.findIndex(
     (chat) => chat.conversationId === conversationId
   )
@@ -128,7 +149,7 @@ const selectConversation = async (conversationId: string) => {
       newMessage: false
     }
     currentConversation.value = conversations.value[conversationIndex]
-    await getConversationHistory(conversationId)
+    await getConversationHistory(conversationId, new Date())
   }
 }
 
@@ -162,6 +183,17 @@ const logOutUser = async () => {
   router.push({ path: '/login' })
 }
 
+const loadMoreConversations = async () => {
+  if (!owner.value?.userId) {
+    return
+  }
+  const lastConversation = conversations.value[conversations.value.length - 1]
+  await getUserConversations(
+    owner.value.userId,
+    lastConversation.createdAt ? new Date(lastConversation.createdAt) : new Date()
+  )
+}
+
 const getParticipantIds = () =>
   Array.from(
     new Set(
@@ -186,7 +218,7 @@ onMounted(async () => {
     owner.value = getUser.data as User
   }
 
-  await getUserConversations(owner.value?.userId ?? '')
+  await getUserConversations(owner.value?.userId ?? '', new Date())
 
   socket = io(import.meta.env.VITE_SERVICE_URL, {
     query: { userId: owner.value?.userId }
@@ -224,11 +256,13 @@ onMounted(async () => {
           }
         }
       ]
+      messagesCount.value += 1
       if (!currentConversation.value?.conversationId) {
         currentConversation.value = {
           conversationId: msgAsObject.conversationId,
           participants: msgAsObject.participants, //[...(currentConversation.value?.participants || []), msgAsObject.from],
-          newMessage: false
+          newMessage: false,
+          createdAt: msgAsObject.createdAt
         }
 
         conversations.value = [...conversations.value, currentConversation.value]
@@ -247,7 +281,8 @@ onMounted(async () => {
         {
           conversationId: msgAsObject.conversationId,
           participants: msgAsObject.participants, // [msgAsObject.from],
-          newMessage
+          newMessage,
+          createdAt: msgAsObject.createdAt
         }
       ]
     } else {
@@ -302,7 +337,8 @@ onMounted(async () => {
       {
         conversationId: data.conversationId,
         participants: data.participants,
-        newMessage: true
+        newMessage: true,
+        createdAt: ''
       }
     ]
   })
@@ -347,6 +383,13 @@ onBeforeUnmount(() => {
           :conversations="conversations"
           @select-conversation="selectConversation"
         />
+        <a
+          v-if="conversationsCount > conversations.length"
+          class="text-slate-950 font-bold py-2 px-2 rounded-md w-20 cursor-pointer"
+          @click="loadMoreConversations"
+        >
+          Load more ...
+        </a>
       </div>
 
       <!-- Logout button -->
@@ -374,7 +417,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- History prev chat -->
-      <Messages :messages="messages" />
+      <Messages :messages="messages" @load-more-messages="handleLoadMoreMessages" />
 
       <!-- Typing area -->
       <MessageInput

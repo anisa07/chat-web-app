@@ -8,12 +8,12 @@ export const submitMessage = (message: Message) => {
   return axios.post(`${url}/archive`, message)
 }
 
-export const loadUserConversations = (userId: string) =>
-  axios.get(`${url}/archive/${userId}`).then((response) => response.data)
+export const loadUserConversations = (userId: string, date: string | number) =>
+  axios.get(`${url}/archive/${userId}/${date}`).then((response) => response.data)
 
-export const loadConversationMessages = (userId: string, coversationId: string) =>
+export const loadConversationMessages = (userId: string, coversationId: string, date: string) =>
   axios
-    .get(`${url}/archive/coversation/${userId}/${coversationId}`)
+    .get(`${url}/archive/coversation/${userId}/${coversationId}/${date}`)
     .then((response) => response.data)
 
 export const updateConversationMessages = (coversationId: string, userId: string) =>

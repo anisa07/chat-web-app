@@ -15,4 +15,5 @@ export interface Conversation {
   conversationId: string
   participants: User[]
   newMessage?: boolean
+  createdAt?: string
 }
