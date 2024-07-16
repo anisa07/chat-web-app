@@ -1,24 +1,52 @@
 <script setup lang="ts">
+import { submitMessage } from '@/services/conversationService'
+import { useAuthStore } from '@/stores/auth'
+import { getConversationParticipantIds } from '@/utils/get-participant-ids'
 import { ref } from 'vue'
+import { debounce } from '@/utils/debounce'
+import { useSocketStore } from '@/stores/socket-store'
+import { storeToRefs } from 'pinia'
+import { useConversationStore } from '@/stores/conversation'
 
-const props = defineProps<{
-  disabledSendButton: boolean
-}>()
+const { getUser } = useAuthStore()
 
-const emit = defineEmits(['send-message', 'typing-message'])
+const socketStore = useSocketStore()
+const { emitTyping } = socketStore
+const { typing } = storeToRefs(socketStore)
+
+const conversationStore = useConversationStore()
+const { getCurrentConversation } = storeToRefs(conversationStore)
+
 const message = ref('')
 
-const sendMessage = () => {
-  if (props.disabledSendButton) return
-  emit('send-message', message.value)
+const emitTypeMessage = debounce((value: string) => {
+  if (getCurrentConversation.value && getUser.data?.userId) {
+    emitTyping(value)
+  }
+})
+
+const sendMessage = async () => {
+  if (
+    !getCurrentConversation.value ||
+    getCurrentConversation.value.participants.length === 0 ||
+    !getUser.data ||
+    !message.value.trim()
+  )
+    return
+  await submitMessage({
+    fromId: getUser.data.userId,
+    toIds: getConversationParticipantIds(getCurrentConversation.value),
+    message: message.value,
+    conversationId: getCurrentConversation.value.conversationId ?? ''
+  })
   message.value = ''
-  emit('typing-message', 'stop')
+  emitTypeMessage('stop')
 }
 
 const onChange = () => {
-  emit('typing-message', 'typing')
+  emitTypeMessage('typing')
   if (message.value === '') {
-    emit('typing-message', 'stop')
+    emitTypeMessage('stop')
   }
 }
 </script>
@@ -37,6 +65,13 @@ const onChange = () => {
       class="absolute p-3 right-1 cursor-pointer w-5 h-5 text-slate-600"
       v-on:click="sendMessage"
     />
+  </div>
+  <div class="px-2 mb-1 min-h-[15px]">
+    <div v-for="user in typing">
+      <Transition name="fade" mode="out-in">
+        <span v-show="getCurrentConversation" class="text-xs">{{ user }} is typing... </span>
+      </Transition>
+    </div>
   </div>
 </template>
 

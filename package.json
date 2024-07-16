@@ -23,6 +23,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-regular-svg-icons": "^6.5.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@tanstack/react-query": "^5.51.1",
     "@vueuse/core": "^10.11.0",
     "axios": "^1.6.8",
     "dotenv": "^16.4.5",

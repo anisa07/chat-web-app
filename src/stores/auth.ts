@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import { auth } from '@/main'
-import { createUser, getUser, updateUser } from '@/services/userService'
+import { createUser, getUser } from '@/services/userService'
 import type { UserData } from '@/types/UserData'
 import type { UserAccount } from '@/types/UserAccount'
 import { createToken, resetToken } from '@/utils/sessionUtils'
@@ -49,7 +49,6 @@ export const useAuthStore = defineStore('auth', {
         const token = await userResponse.getIdToken()
         await createToken(userResponse.uid, token)
         const user = await getUser(userResponse.uid)
-        // await updateUser({ ...user, online: true })
         this.setUser(user)
         this.setLoggedInState(true)
       } else {
@@ -59,9 +58,6 @@ export const useAuthStore = defineStore('auth', {
     async logOut() {
       await signOut(auth)
       await resetToken()
-      // if (this.user.data) {
-      //   await updateUser({ ...this.user.data, online: false })
-      // }
       this.setUser(null)
       this.setLoggedInState(false)
     }

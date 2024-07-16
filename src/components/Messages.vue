@@ -3,22 +3,35 @@ import type { ArchiveMessage } from '@/types/app-types'
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { throttle } from '@/utils/trottle'
+import { useConversationStore } from '@/stores/conversation'
+import { useMessageStore } from '@/stores/message'
+import { storeToRefs } from 'pinia'
 
-const props = defineProps<{
-  messages: ArchiveMessage[]
-}>()
+const conversationStore = useConversationStore()
+const { getCurrentConversation } = storeToRefs(conversationStore)
 
-const emit = defineEmits(['load-more-messages'])
+const messageStore = useMessageStore()
+const { getMessages, getMessagesCount } = storeToRefs(messageStore)
+const { getConversationHistory } = messageStore
 
 const { getUser } = useAuthStore()
 const containerRef = ref<null | HTMLDivElement>(null)
 const ulRef = ref<null | HTMLUListElement>(null)
 const isAuthor = (msg: ArchiveMessage) => getUser.data?.userId === msg.author.userId
 
+const handleLoadMoreMessages = async () => {
+  if (getMessagesCount.value > getMessages.value.length) {
+    await getConversationHistory(
+      getCurrentConversation.value?.conversationId ?? '',
+      new Date(getMessages.value[0].createdAt)
+    )
+  }
+}
+
 const handleScrollTop = () => {
   // Check if the user is scrolling up
   if (containerRef?.value && containerRef.value.scrollTop < containerRef.value.scrollHeight) {
-    emit('load-more-messages')
+    handleLoadMoreMessages()
   }
 }
 
@@ -35,7 +48,7 @@ const scrollToBottom = () => {
 
 // Watch for changes in messages prop
 watch(
-  () => props.messages,
+  () => getMessages.value,
   (newVal, oldVal) => {
     if (newVal.length !== oldVal.length) {
       scrollToBottom()
@@ -61,9 +74,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="containerRef" class="flex-1 p-2 overflow-auto bg-slate-50">
-    <ul ref="ulRef" class="flex flex-col justify-end">
+    <!-- <ul ref="ulRef" class="flex flex-col justify-end"> -->
+    <TransitionGroup ref="ulRef" name="messages" tag="ul" class="flex flex-col justify-end">
       <li
-        v-for="msg in messages"
+        v-for="msg in getMessages"
         class="mb-2 w-2/3"
         :key="msg.messageId"
         :class="{ 'self-end': isAuthor(msg) }"
@@ -86,8 +100,20 @@ onBeforeUnmount(() => {
           <span class="text-xs">{{ new Date(msg.createdAt).toLocaleString() }}</span>
         </div>
       </li>
-    </ul>
+    </TransitionGroup>
+    <!-- </ul> -->
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.messages-enter-active,
+.messages-leave-active {
+  transition: all 0.5s ease;
+}
+
+.messages-enter-from,
+.messages-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+</style>

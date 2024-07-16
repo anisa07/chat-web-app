@@ -1,5 +1,4 @@
 import type { Message } from '@/types/Message'
-import type { Conversation } from '@/types/app-types'
 import axios from 'axios'
 
 const url = import.meta.env.VITE_SERVICE_URL
@@ -30,3 +29,8 @@ export const updateConversation = (conversation: {
     .put(`${url}/archive/coversation/${conversation.conversationId}`, conversation)
     .then((response) => response.data)
 }
+
+export const checkNewUserConversationAlreadyExists = (currentUserId: string, newUserId: string) =>
+  axios
+    .get(`${url}/archive/new-coversation/${currentUserId}/${newUserId}`)
+    .then((response) => response.data)
