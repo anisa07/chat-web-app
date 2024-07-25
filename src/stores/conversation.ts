@@ -40,7 +40,6 @@ export const useConversationStore = defineStore('conversation', {
         await loadUserConversations(userId, date.toString())
       this.setConversations([...this.conversations, ...userConversations])
       this.setConversationsCount(conversationsLength)
-      console.log(userConversations, conversationsLength)
     },
     async selectConversation(conversationId: string) {
       const { setMessagesCount, setMessages, getConversationHistory } = useMessageStore()
